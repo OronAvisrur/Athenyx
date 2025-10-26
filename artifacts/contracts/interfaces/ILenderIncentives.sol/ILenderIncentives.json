@@ -1,0 +1,476 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "ILenderIncentives",
+  "sourceName": "contracts/interfaces/ILenderIncentives.sol",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "InsufficientFunds",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidAmount",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "InvalidInterestRate",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "LenderNotRegistered",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "OfferAlreadyExists",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "OfferNotFound",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "lender",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "bonusAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "EarlyBirdBonusAwarded",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "escrowId",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "lender",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "InterestPaid",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "lender",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "LenderRegistered",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "lender",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "rewardAmount",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "reason",
+          "type": "string"
+        }
+      ],
+      "name": "LenderRewarded",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "escrowId",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "lender",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "LoanOfferAccepted",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "escrowId",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "lender",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "interestRate",
+          "type": "uint256"
+        }
+      ],
+      "name": "LoanOfferPlaced",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "escrowId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "lender",
+          "type": "address"
+        }
+      ],
+      "name": "acceptLoanOffer",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "escrowId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "borrowerReputation",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "guarantorCount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "guarantorQuality",
+          "type": "uint256"
+        }
+      ],
+      "name": "calculateInterestRate",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "baseRate",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "riskPremium",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "earlyBirdBonus",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "reputationDiscount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "finalRate",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct ILenderIncentives.InterestCalculation",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "escrowId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getEscrowOffers",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "",
+          "type": "address[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "lender",
+          "type": "address"
+        }
+      ],
+      "name": "getLenderProfile",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "lenderAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "totalLent",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "totalRepaid",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "activeLoanCount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "successfulLoanCount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "defaultedLoanCount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "rewardsEarned",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "joinedAt",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct ILenderIncentives.LenderProfile",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "escrowId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "lender",
+          "type": "address"
+        }
+      ],
+      "name": "getLoanOffer",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint256",
+              "name": "escrowId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "lender",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "offeredAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "interestRateBasisPoints",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "offerTimestamp",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "isAccepted",
+              "type": "bool"
+            },
+            {
+              "internalType": "bool",
+              "name": "isActive",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct ILenderIncentives.LoanOffer",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "escrowId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "lender",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "payInterest",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "escrowId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "interestRateBasisPoints",
+          "type": "uint256"
+        }
+      ],
+      "name": "placeLoanOffer",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "registerLender",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "lender",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "reason",
+          "type": "string"
+        }
+      ],
+      "name": "rewardLender",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
