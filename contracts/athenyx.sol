@@ -215,6 +215,46 @@ contract Athenyx is ReentrancyGuard, ERC721, EIP712 {
         emit MilestoneApproved(escrowId, milestoneIndex, signer);
     }
 
+    function releaseMilestone(uint256 escrowId, uint256 milestoneIndex) 
+        external 
+        nonReentrant 
+        onlyActive(escrowId) 
+    {
+        Escrow storage currentEscrow = escrows[escrowId];
+        if (milestoneIndex >= currentEscrow.milestones.length) revert InvalidAmount();
+
+        Milestone storage currentMilestone = currentEscrow.milestones[milestoneIndex];
+        if (!currentMilestone.approved) revert NotApproved();
+        if (currentMilestone.released) revert AlreadyReleased();
+        if (currentEscrow.totalFunded < currentEscrow.totalReleased + currentMilestone.amount) {
+            revert InsufficientFunds();
+        }
+
+        currentMilestone.released = true;
+        currentEscrow.totalReleased += currentMilestone.amount;
+
+        (bool success, ) = currentEscrow.seller.call{value: currentMilestone.amount}("");
+        if (!success) revert TransferFailed();
+
+        emit MilestoneReleased(escrowId, milestoneIndex, currentMilestone.amount);
+
+        uint256 totalExpectedAmount = currentEscrow.arbiterFee;
+        for (uint256 i = 0; i < currentEscrow.milestones.length; i++) {
+            totalExpectedAmount += currentEscrow.milestones[i].amount;
+        }
+
+        if (currentEscrow.totalReleased == totalExpectedAmount) {
+            currentEscrow.state = EscrowState.COMPLETED;
+            
+            if (currentEscrow.arbiterFee > 0 && currentEscrow.arbiter != address(0)) {
+                (bool arbiterSuccess, ) = currentEscrow.arbiter.call{value: currentEscrow.arbiterFee}("");
+                if (!arbiterSuccess) revert TransferFailed();
+            }
+            
+            emit EscrowCompleted(escrowId);
+        }
+    }
+
     function _recoverApprovalSigner(
         uint256 escrowId,
         uint256 milestoneIndex,
