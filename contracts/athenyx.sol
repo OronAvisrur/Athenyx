@@ -79,5 +79,25 @@ contract Athenyx is ReentrancyGuard, ERC721, EIP712 {
     error ZeroAddress();
     error EmptyMilestones();
 
+    modifier onlyPayer(uint256 escrowId) {
+        if (!hasContributed[escrowId][msg.sender]) revert Unauthorized();
+        _;
+    }
+
+    modifier onlySeller(uint256 escrowId) {
+        if (escrows[escrowId].seller != msg.sender) revert Unauthorized();
+        _;
+    }
+
+    modifier onlyArbiter(uint256 escrowId) {
+        if (escrows[escrowId].arbiter != msg.sender) revert Unauthorized();
+        _;
+    }
+
+    modifier onlyActive(uint256 escrowId) {
+        if (escrows[escrowId].state != EscrowState.ACTIVE) revert InvalidState();
+        _;
+    }
+
     constructor() ERC721("Athenyx Escrow", "ATHX") EIP712("Athenyx", "1") {}
 }
