@@ -455,4 +455,161 @@ contract Athenyx is ReentrancyGuard, ERC721, EIP712, Ownable {
     }
 
     receive() external payable {}
+
+    function claimExpiredMilestone(uint256 escrowId, uint256 milestoneIndex) 
+        external 
+        onlySeller(escrowId) 
+        onlyActive(escrowId) 
+        nonReentrant 
+    {
+        Escrow storage currentEscrow = escrows[escrowId];
+        if (milestoneIndex >= currentEscrow.milestones.length) revert InvalidAmount();
+
+        Milestone storage currentMilestone = currentEscrow.milestones[milestoneIndex];
+        if (currentMilestone.released) revert AlreadyReleased();
+        if (currentMilestone.deadline == 0) revert InvalidDeadline();
+        if (block.timestamp <= currentMilestone.deadline) revert DeadlineNotPassed();
+
+        currentMilestone.approved = true;
+        currentMilestone.released = true;
+        currentEscrow.totalReleased += currentMilestone.amount;
+
+        (bool success, ) = currentEscrow.seller.call{value: currentMilestone.amount}("");
+        if (!success) revert TransferFailed();
+
+        emit MilestoneApproved(escrowId, milestoneIndex, address(this));
+        emit MilestoneReleased(escrowId, milestoneIndex, currentMilestone.amount);
+    }
+
+    function refundExpiredMilestone(uint256 escrowId, uint256 milestoneIndex) 
+        external 
+        onlyPayer(escrowId) 
+        onlyActive(escrowId) 
+        nonReentrant 
+    {
+        Escrow storage currentEscrow = escrows[escrowId];
+        if (milestoneIndex >= currentEscrow.milestones.length) revert InvalidAmount();
+
+        Milestone storage currentMilestone = currentEscrow.milestones[milestoneIndex];
+        if (currentMilestone.released) revert AlreadyReleased();
+        if (currentMilestone.approved) revert AlreadyApproved();
+        if (currentMilestone.deadline == 0) revert InvalidDeadline();
+        if (block.timestamp <= currentMilestone.deadline) revert DeadlineNotPassed();
+
+        currentMilestone.released = true;
+        uint256 refundAmount = _calculateRefund(escrowId, currentMilestone.amount);
+
+        if (refundAmount > 0) {
+            (bool success, ) = msg.sender.call{value: refundAmount}("");
+            if (!success) revert TransferFailed();
+        }
+    }
+
+    function raiseDispute(uint256 escrowId) external onlyActive(escrowId) {
+        if (!hasContributed[escrowId][msg.sender] && escrows[escrowId].seller != msg.sender) {
+            revert Unauthorized();
+        }
+
+        escrows[escrowId].state = EscrowState.DISPUTED;
+        emit DisputeRaised(escrowId, msg.sender);
+    }
+
+    function resolveDispute(uint256 escrowId, uint256[] calldata milestoneIndicesToRelease) 
+        external 
+        onlyArbiter(escrowId) 
+        nonReentrant 
+    {
+        Escrow storage currentEscrow = escrows[escrowId];
+        if (currentEscrow.state != EscrowState.DISPUTED) revert InvalidState();
+
+        for (uint256 i = 0; i < milestoneIndicesToRelease.length; i++) {
+            uint256 milestoneIndex = milestoneIndicesToRelease[i];
+            if (milestoneIndex >= currentEscrow.milestones.length) revert InvalidAmount();
+
+            Milestone storage currentMilestone = currentEscrow.milestones[milestoneIndex];
+            if (currentMilestone.released) continue;
+
+            currentMilestone.approved = true;
+            currentMilestone.released = true;
+            currentEscrow.totalReleased += currentMilestone.amount;
+
+            (bool success, ) = currentEscrow.seller.call{value: currentMilestone.amount}("");
+            if (!success) revert TransferFailed();
+
+            emit MilestoneReleased(escrowId, milestoneIndex, currentMilestone.amount);
+        }
+
+        currentEscrow.state = EscrowState.ACTIVE;
+
+        if (currentEscrow.arbiterFee > 0) {
+            (bool arbiterSuccess, ) = currentEscrow.arbiter.call{value: currentEscrow.arbiterFee}("");
+            if (!arbiterSuccess) revert TransferFailed();
+        }
+
+        emit DisputeResolved(escrowId, milestoneIndicesToRelease);
+
+        uint256 totalExpectedAmount = currentEscrow.arbiterFee;
+        for (uint256 i = 0; i < currentEscrow.milestones.length; i++) {
+            totalExpectedAmount += currentEscrow.milestones[i].amount;
+        }
+
+        if (currentEscrow.totalReleased == totalExpectedAmount) {
+            _completeEscrow(escrowId);
+        }
+    }
+
+    function cancelEscrow(uint256 escrowId) 
+        external 
+        onlyPayer(escrowId) 
+        onlyActive(escrowId) 
+        nonReentrant 
+    {
+        Escrow storage currentEscrow = escrows[escrowId];
+
+        uint256 totalExpectedAmount = currentEscrow.arbiterFee;
+        for (uint256 i = 0; i < currentEscrow.milestones.length; i++) {
+            totalExpectedAmount += currentEscrow.milestones[i].amount;
+        }
+
+        uint256 remainingAmount = currentEscrow.totalFunded - currentEscrow.totalReleased;
+        if (remainingAmount == 0) revert InsufficientFunds();
+
+        currentEscrow.state = EscrowState.CANCELLED;
+
+        for (uint256 i = 0; i < currentEscrow.milestones.length; i++) {
+            if (!currentEscrow.milestones[i].released) {
+                currentEscrow.milestones[i].released = true;
+            }
+        }
+        
+        if (currentEscrow.requiresGuarantors) {
+            address[] memory guarantors = guarantorRegistry.getEscrowGuarantors(escrowId);
+            for (uint256 i = 0; i < guarantors.length; i++) {
+                guarantorRegistry.slashGuarantor(guarantors[i], escrowId, 0);
+                guarantorRegistry.updateReputation(guarantors[i], -int256(REPUTATION_FAILURE_PENALTY));
+            }
+        }
+
+        for (uint256 i = 0; i < currentEscrow.payers.length; i++) {
+            address payerAddress = currentEscrow.payers[i];
+            uint256 payerRefund = (remainingAmount * currentEscrow.contributions[payerAddress]) / currentEscrow.totalFunded;
+            
+            if (payerRefund > 0) {
+                (bool success, ) = payerAddress.call{value: payerRefund}("");
+                if (!success) revert TransferFailed();
+            }
+        }
+
+        emit EscrowCancelled(escrowId, remainingAmount);
+    }
+
+    function _calculateRefund(uint256 escrowId, uint256 amount) internal view returns (uint256) {
+        Escrow storage currentEscrow = escrows[escrowId];
+        uint256 payerContribution = currentEscrow.contributions[msg.sender];
+        
+        if (payerContribution == 0 || currentEscrow.totalFunded == 0) return 0;
+        
+        return (amount * payerContribution) / currentEscrow.totalFunded;
+    }
 }
+
