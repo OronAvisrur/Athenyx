@@ -337,12 +337,15 @@ contract Athenyx is ReentrancyGuard, ERC721, EIP712, Ownable {
 
         emit MilestoneReleased(escrowId, milestoneIndex, currentMilestone.amount);
 
-        uint256 totalExpectedAmount = currentEscrow.arbiterFee;
+        bool allMilestonesReleased = true;
         for (uint256 i = 0; i < currentEscrow.milestones.length; i++) {
-            totalExpectedAmount += currentEscrow.milestones[i].amount;
+            if (!currentEscrow.milestones[i].released) {
+                allMilestonesReleased = false;
+                break;
+            }
         }
 
-        if (currentEscrow.totalReleased == totalExpectedAmount) {
+        if (allMilestonesReleased) {
             _completeEscrow(escrowId);
         }
     }
