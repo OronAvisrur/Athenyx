@@ -1,4 +1,3 @@
-```markdown
 <div align="center">
 
 <!-- LOGO PLACEHOLDER -->
@@ -34,16 +33,16 @@ Inspired by ancient Spartan collective accountability and modern cryptographic c
 
 ## 🎯 Core Problems Solved
 
-### 1. **Moral Hazard**
+### 1. Moral Hazard
 Traditional lending suffers from information asymmetry. Athenyx uses staked guarantors with progressive liability to ensure borrower accountability.
 
-### 2. **Coordination Failure (Byzantine Generals Problem)**
+### 2. Coordination Failure (Byzantine Generals Problem)
 Guarantors could collude with borrowers. Our commit-reveal scheme with time-locked verifications prevents collusion while maintaining privacy.
 
-### 3. **Adverse Selection**
+### 3. Adverse Selection
 Bad borrowers drive out good ones. Athenyx's on-chain reputation system and tiered interest rates create proper risk pricing.
 
-### 4. **Lender Risk Aversion**
+### 4. Lender Risk Aversion
 Why lend in a trustless environment? Multi-layered protection (guarantors + insurance pool + reputation) with attractive yields.
 
 ---
@@ -247,19 +246,19 @@ npm test
 npm run test:coverage
 
 # Run specific test file
-npx hardhat test test/AthenyxCore.test.js
+npx hardhat test test/Athenyx.test.js
 ```
 
 ### Local Deployment
 
 ```bash
-# Start local Hardhat node
+# Start local Hardhat node (Terminal 1)
 npm run node
 
-# In another terminal, deploy contracts
+# In another terminal, deploy contracts (Terminal 2)
 npm run deploy:local
 
-# Interact with deployed contracts
+# Interact with deployed contracts (Terminal 3)
 npm run interact
 ```
 
@@ -276,30 +275,30 @@ npm run interact
    - Repayment timeline  
    - Milestone breakdown
 
-2. **Find guarantors**:
+2. **Find guarantors** (optional):
    - Primary: 3-5 trusted individuals with good reputation
    - Secondary: Additional safety layer
 
 3. **Submit loan request**:
    ```javascript
-   await athenyx.createLoanRequest({
-     amount: ethers.parseEther("10"),
-     duration: 180 days,
-     milestones: [2, 3, 5], // ETH amounts
-     milestoneDeadlines: [30, 90, 180] // days
-   });
+   const tx = await athenyx.createEscrow(
+     sellerAddress,
+     arbiterAddress,
+     arbiterFee,
+     milestoneAmounts,
+     milestoneDeadlines,
+     requiresGuarantors, // true if you want guarantors
+     minGuarantorCount,
+     { value: totalAmount }
+   );
    ```
 
-4. **Guarantors commit**:
-   - Each guarantor stakes required amount
+4. **If guarantors required**:
+   - Each guarantor commits their stake
    - Commit-reveal process prevents collusion
+   - Activate escrow with lender
 
-5. **Lenders compete**:
-   - System calculates risk score
-   - Lenders offer interest rates
-   - Best rate wins
-
-6. **Receive funds & repay milestones**
+5. **Receive funds & repay milestones**
 
 ---
 
@@ -307,23 +306,21 @@ npm run interact
 
 **How to lend capital**:
 
-1. **Browse loan requests**:
+1. **Register as lender**:
    ```javascript
-   const loans = await athenyx.getActiveLoanRequests();
+   await lenderIncentives.registerLender();
    ```
 
-2. **Analyze risk**:
-   - Check borrower reputation
-   - Verify guarantor quality
-   - Review milestone plan
-
-3. **Place competitive bid**:
+2. **Place loan offer**:
    ```javascript
-   await athenyx.offerLoanTerms(loanId, {
-     interestRate: 750, // 7.5% in basis points
-     value: ethers.parseEther("10")
-   });
+   await lenderIncentives.placeLoanOffer(
+     escrowId,
+     interestRateBasisPoints, // e.g., 750 = 7.5%
+     { value: loanAmount }
+   );
    ```
+
+3. **Wait for borrower to accept**
 
 4. **Receive repayments**:
    - Milestone-based (reduces risk)
@@ -336,31 +333,42 @@ npm run interact
 
 **How to become a guarantor**:
 
-1. **Build reputation**:
+1. **Register**:
+   ```javascript
+   await guarantorRegistry.registerGuarantor();
+   ```
+
+2. **Build reputation**:
    - Start as secondary guarantor
    - Complete successful guarantees
    - Earn reputation points
 
-2. **Commit to loans**:
+3. **Commit to loans**:
    ```javascript
-   await athenyx.commitAsGuarantor(loanId, {
-     tier: "PRIMARY",
-     secret: randomBytes(32),
-     stake: ethers.parseEther("2")
-   });
+   const secret = ethers.randomBytes(32);
+   const hash = ethers.keccak256(
+     ethers.solidityPacked(
+       ["address", "bytes32", "uint256"],
+       [yourAddress, secret, escrowId]
+     )
+   );
+   
+   await guarantorRegistry.commitAsGuarantor(
+     escrowId,
+     1, // GuarantorTier.PRIMARY
+     stakeAmount,
+     hash,
+     { value: stakeAmount }
+   );
    ```
 
-3. **Reveal after commitment period**:
+4. **Reveal after commitment period**:
    ```javascript
-   await athenyx.revealGuarantorCommitment(loanId, secret);
+   await guarantorRegistry.revealCommitment(escrowId, secret);
    ```
-
-4. **Monitor loan**:
-   - Respond to availability checks
-   - Report issues early (whistleblower rewards)
 
 5. **Earn rewards**:
-   - Stake returned + reputation
+   - Stake returned + reputation boost
    - Protocol fee share
    - Access to better opportunities
 
@@ -374,12 +382,12 @@ npm run interact
 2. **Review evidence** (off-chain + on-chain)
 3. **Make ruling**:
    ```javascript
-   await athenyx.resolveDispute(escrowId, {
-     milestonesToRelease: [0, 1], // Release first 2 milestones to seller
-     refundAmount: ethers.parseEther("5") // Refund remaining to payers
-   });
+   await athenyx.resolveDispute(
+     escrowId,
+     [0, 1] // Release milestones 0 and 1 to seller
+   );
    ```
-4. **Receive arbiter fee** (paid from escrow)
+4. **Receive arbiter fee** (paid automatically from escrow)
 
 ---
 
@@ -391,7 +399,7 @@ npm run interact
 // Reputation System
 MIN_REPUTATION_TO_GUARANTEE = 100
 REPUTATION_GAIN_PER_SUCCESS = 10
-REPUTATION_LOSS_PER_FAIL = -50
+REPUTATION_LOSS_PER_FAIL = 50
 REPUTATION_RECOVERY_TIME = 90 days
 
 // Stake Requirements
@@ -419,27 +427,25 @@ DISPUTE_PERIOD = 7 days
 
 ## 🛠️ Development Roadmap
 
-### ✅ Phase 1: Core Escrow (Complete)
+### ✅ Phase 1: Core Protocol (Complete)
 - [x] Multi-party contributions
 - [x] Milestone-based releases
 - [x] EIP-712 signatures
 - [x] NFT ownership
 - [x] Dispute resolution
+- [x] Guarantor registry
+- [x] Commit-reveal scheme
+- [x] Insurance pool
+- [x] Lender incentives
+- [x] 25 comprehensive tests
 
-### 🚧 Phase 2: Guarantor System (In Progress)
-- [ ] Guarantor registry
-- [ ] Commit-reveal scheme
-- [ ] Stake management
-- [ ] Reputation scoring
-- [ ] Time-locked verifications
+### 📋 Phase 2: Standard & Modularity (Current)
+- [ ] Refactor to modular architecture
+- [ ] Create EIP draft
+- [ ] NPM package publication
+- [ ] Developer documentation
 
-### 📋 Phase 3: Lender Incentives (Planned)
-- [ ] Dynamic interest calculation
-- [ ] Dutch auction for lending
-- [ ] Insurance pool
-- [ ] Liquidity provider tokens
-
-### 🔮 Phase 4: Advanced Features (Future)
+### 🔮 Phase 3: Advanced Features (Future)
 - [ ] DAO governance
 - [ ] Cross-chain bridges
 - [ ] Privacy layers (zk-SNARKs)
@@ -520,6 +526,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
+## 🌐 Links
+
+- **Documentation**: Coming soon
+- **Discord**: Coming soon
+- **Twitter**: Coming soon
+
+---
+
 <div align="center">
 
 **Built with ❤️ by the Athenyx Team**
@@ -527,4 +541,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 *Trustless lending through cryptoeconomic security*
 
 </div>
-```
