@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "C:\\Users\\user\\athenyx\\contracts\\athenyx.sol": {
-      "lastModificationDate": 1761469155423,
-      "contentHash": "46318e379b9d229a7f2f7232e9af3157",
+      "lastModificationDate": 1761469670910,
+      "contentHash": "ee7bead725c8f9633ef59b19649c56f9",
       "sourceName": "contracts/athenyx.sol",
       "solcConfig": {
         "version": "0.8.30",

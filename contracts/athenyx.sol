@@ -255,6 +255,64 @@ contract Athenyx is ReentrancyGuard, ERC721, EIP712 {
         }
     }
 
+    function claimExpiredMilestone(uint256 escrowId, uint256 milestoneIndex) 
+        external 
+        onlySeller(escrowId) 
+        onlyActive(escrowId) 
+        nonReentrant 
+    {
+        Escrow storage currentEscrow = escrows[escrowId];
+        if (milestoneIndex >= currentEscrow.milestones.length) revert InvalidAmount();
+
+        Milestone storage currentMilestone = currentEscrow.milestones[milestoneIndex];
+        if (currentMilestone.released) revert AlreadyReleased();
+        if (currentMilestone.deadline == 0) revert InvalidDeadline();
+        if (block.timestamp <= currentMilestone.deadline) revert DeadlineNotPassed();
+
+        currentMilestone.approved = true;
+        currentMilestone.released = true;
+        currentEscrow.totalReleased += currentMilestone.amount;
+
+        (bool success, ) = currentEscrow.seller.call{value: currentMilestone.amount}("");
+        if (!success) revert TransferFailed();
+
+        emit MilestoneApproved(escrowId, milestoneIndex, address(this));
+        emit MilestoneReleased(escrowId, milestoneIndex, currentMilestone.amount);
+    }
+
+    function refundExpiredMilestone(uint256 escrowId, uint256 milestoneIndex) 
+        external 
+        onlyPayer(escrowId) 
+        onlyActive(escrowId) 
+        nonReentrant 
+    {
+        Escrow storage currentEscrow = escrows[escrowId];
+        if (milestoneIndex >= currentEscrow.milestones.length) revert InvalidAmount();
+
+        Milestone storage currentMilestone = currentEscrow.milestones[milestoneIndex];
+        if (currentMilestone.released) revert AlreadyReleased();
+        if (currentMilestone.approved) revert AlreadyApproved();
+        if (currentMilestone.deadline == 0) revert InvalidDeadline();
+        if (block.timestamp <= currentMilestone.deadline) revert DeadlineNotPassed();
+
+        currentMilestone.released = true;
+        uint256 refundAmount = _calculateRefund(escrowId, currentMilestone.amount);
+
+        if (refundAmount > 0) {
+            (bool success, ) = msg.sender.call{value: refundAmount}("");
+            if (!success) revert TransferFailed();
+        }
+    }
+
+    function _calculateRefund(uint256 escrowId, uint256 amount) internal view returns (uint256) {
+        Escrow storage currentEscrow = escrows[escrowId];
+        uint256 payerContribution = currentEscrow.contributions[msg.sender];
+        
+        if (payerContribution == 0 || currentEscrow.totalFunded == 0) return 0;
+        
+        return (amount * payerContribution) / currentEscrow.totalFunded;
+    }
+
     function _recoverApprovalSigner(
         uint256 escrowId,
         uint256 milestoneIndex,
