@@ -100,4 +100,59 @@ contract Athenyx is ReentrancyGuard, ERC721, EIP712 {
     }
 
     constructor() ERC721("Athenyx Escrow", "ATHX") EIP712("Athenyx", "1") {}
+
+    function createEscrow(
+        address seller,
+        address arbiter,
+        uint256 arbiterFee,
+        uint256[] calldata milestoneAmounts,
+        uint256[] calldata milestoneDeadlines
+    ) external payable returns (uint256) {
+        if (seller == address(0)) revert ZeroAddress();
+        if (milestoneAmounts.length == 0) revert EmptyMilestones();
+        if (milestoneAmounts.length != milestoneDeadlines.length) revert InvalidAmount();
+
+        uint256 totalMilestonesAmount = 0;
+        for (uint256 i = 0; i < milestoneAmounts.length; i++) {
+            if (milestoneAmounts[i] == 0) revert InvalidAmount();
+            if (milestoneDeadlines[i] != 0 && milestoneDeadlines[i] <= block.timestamp) {
+                revert InvalidDeadline();
+            }
+            totalMilestonesAmount += milestoneAmounts[i];
+        }
+
+        if (msg.value < arbiterFee) revert InvalidAmount();
+
+        uint256 escrowId = nextEscrowId++;
+        Escrow storage currentEscrow = escrows[escrowId];
+        
+        currentEscrow.seller = seller;
+        currentEscrow.arbiter = arbiter;
+        currentEscrow.arbiterFee = arbiterFee;
+        currentEscrow.totalFunded = msg.value;
+        currentEscrow.totalReleased = 0;
+        currentEscrow.state = EscrowState.ACTIVE;
+        currentEscrow.createdAt = block.timestamp;
+
+        currentEscrow.payers.push(msg.sender);
+        currentEscrow.contributions[msg.sender] = msg.value;
+        hasContributed[escrowId][msg.sender] = true;
+
+        for (uint256 i = 0; i < milestoneAmounts.length; i++) {
+            currentEscrow.milestones.push(Milestone({
+                amount: milestoneAmounts[i],
+                deadline: milestoneDeadlines[i],
+                approved: false,
+                released: false,
+                approvalHash: bytes32(0)
+            }));
+        }
+
+        _safeMint(seller, escrowId);
+
+        emit EscrowCreated(escrowId, seller, arbiter, totalMilestonesAmount, arbiterFee);
+        emit ContributionAdded(escrowId, msg.sender, msg.value);
+
+        return escrowId;
+    }
 }
