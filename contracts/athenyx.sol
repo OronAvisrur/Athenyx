@@ -358,6 +358,89 @@ contract Athenyx is ReentrancyGuard, ERC721, EIP712 {
         }
     }
 
+    function cancelEscrow(uint256 escrowId) 
+        external 
+        onlyPayer(escrowId) 
+        onlyActive(escrowId) 
+        nonReentrant 
+    {
+        Escrow storage currentEscrow = escrows[escrowId];
+
+        uint256 totalExpectedAmount = currentEscrow.arbiterFee;
+        for (uint256 i = 0; i < currentEscrow.milestones.length; i++) {
+            totalExpectedAmount += currentEscrow.milestones[i].amount;
+        }
+
+        uint256 remainingAmount = currentEscrow.totalFunded - currentEscrow.totalReleased;
+        if (remainingAmount == 0) revert InsufficientFunds();
+
+        currentEscrow.state = EscrowState.CANCELLED;
+
+        for (uint256 i = 0; i < currentEscrow.milestones.length; i++) {
+            if (!currentEscrow.milestones[i].released) {
+                currentEscrow.milestones[i].released = true;
+            }
+        }
+
+        for (uint256 i = 0; i < currentEscrow.payers.length; i++) {
+            address payerAddress = currentEscrow.payers[i];
+            uint256 payerRefund = _calculateRefund(escrowId, remainingAmount);
+            
+            if (payerRefund > 0) {
+                (bool success, ) = payerAddress.call{value: payerRefund}("");
+                if (!success) revert TransferFailed();
+            }
+        }
+
+        emit EscrowCancelled(escrowId, remainingAmount);
+    }
+
+    function getEscrowDetails(uint256 escrowId) external view returns (
+        address[] memory payers,
+        address seller,
+        address arbiter,
+        uint256 totalFunded,
+        uint256 totalReleased,
+        uint256 arbiterFee,
+        EscrowState state,
+        uint256 createdAt
+    ) {
+        Escrow storage currentEscrow = escrows[escrowId];
+        return (
+            currentEscrow.payers,
+            currentEscrow.seller,
+            currentEscrow.arbiter,
+            currentEscrow.totalFunded,
+            currentEscrow.totalReleased,
+            currentEscrow.arbiterFee,
+            currentEscrow.state,
+            currentEscrow.createdAt
+        );
+    }
+
+    function getMilestone(uint256 escrowId, uint256 milestoneIndex) external view returns (
+        uint256 amount,
+        uint256 deadline,
+        bool approved,
+        bool released
+    ) {
+        Milestone storage currentMilestone = escrows[escrowId].milestones[milestoneIndex];
+        return (
+            currentMilestone.amount,
+            currentMilestone.deadline,
+            currentMilestone.approved,
+            currentMilestone.released
+        );
+    }
+
+    function getMilestoneCount(uint256 escrowId) external view returns (uint256) {
+        return escrows[escrowId].milestones.length;
+    }
+
+    function getContribution(uint256 escrowId, address payer) external view returns (uint256) {
+        return escrows[escrowId].contributions[payer];
+    }
+
     function _calculateRefund(uint256 escrowId, uint256 amount) internal view returns (uint256) {
         Escrow storage currentEscrow = escrows[escrowId];
         uint256 payerContribution = currentEscrow.contributions[msg.sender];
@@ -388,5 +471,16 @@ contract Athenyx is ReentrancyGuard, ERC721, EIP712 {
 
         if (signer == address(0)) revert InvalidSignature();
         return signer;
+    }
+
+    function _update(address to, uint256 tokenId, address auth) internal virtual override returns (address) {
+        address from = _ownerOf(tokenId);
+        address previousOwner = super._update(to, tokenId, auth);
+        
+        if (from != address(0) && to != address(0)) {
+            escrows[tokenId].seller = to;
+        }
+        
+        return previousOwner;
     }
 }
