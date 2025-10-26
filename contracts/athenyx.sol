@@ -155,4 +155,86 @@ contract Athenyx is ReentrancyGuard, ERC721, EIP712 {
 
         return escrowId;
     }
+
+    function contributeToEscrow(uint256 escrowId) external payable onlyActive(escrowId) {
+        if (msg.value == 0) revert InvalidAmount();
+
+        Escrow storage currentEscrow = escrows[escrowId];
+        
+        if (!hasContributed[escrowId][msg.sender]) {
+            currentEscrow.payers.push(msg.sender);
+            hasContributed[escrowId][msg.sender] = true;
+        }
+
+        currentEscrow.contributions[msg.sender] += msg.value;
+        currentEscrow.totalFunded += msg.value;
+
+        emit ContributionAdded(escrowId, msg.sender, msg.value);
+    }
+
+    function approveMilestone(uint256 escrowId, uint256 milestoneIndex) 
+        external 
+        onlyPayer(escrowId) 
+        onlyActive(escrowId) 
+    {
+        Escrow storage currentEscrow = escrows[escrowId];
+        if (milestoneIndex >= currentEscrow.milestones.length) revert InvalidAmount();
+
+        Milestone storage currentMilestone = currentEscrow.milestones[milestoneIndex];
+        if (currentMilestone.approved) revert AlreadyApproved();
+        if (currentMilestone.released) revert AlreadyReleased();
+
+        currentMilestone.approved = true;
+        emit MilestoneApproved(escrowId, milestoneIndex, msg.sender);
+    }
+
+    function approveMilestoneWithSignature(
+        uint256 escrowId,
+        uint256 milestoneIndex,
+        uint256 signatureDeadline,
+        bytes calldata signature
+    ) external onlyActive(escrowId) {
+        if (block.timestamp > signatureDeadline) revert SignatureExpired();
+
+        Escrow storage currentEscrow = escrows[escrowId];
+        if (milestoneIndex >= currentEscrow.milestones.length) revert InvalidAmount();
+
+        Milestone storage currentMilestone = currentEscrow.milestones[milestoneIndex];
+        if (currentMilestone.approved) revert AlreadyApproved();
+        if (currentMilestone.released) revert AlreadyReleased();
+
+        address signer = _recoverApprovalSigner(escrowId, milestoneIndex, signatureDeadline, signature);
+        if (!hasContributed[escrowId][signer]) revert Unauthorized();
+
+        uint256 currentNonce = nonces[signer];
+        nonces[signer]++;
+
+        currentMilestone.approved = true;
+        currentMilestone.approvalHash = keccak256(abi.encodePacked(signer, currentNonce));
+
+        emit MilestoneApproved(escrowId, milestoneIndex, signer);
+    }
+
+    function _recoverApprovalSigner(
+        uint256 escrowId,
+        uint256 milestoneIndex,
+        uint256 signatureDeadline,
+        bytes calldata signature
+    ) internal view returns (address) {
+        bytes32 structHash = keccak256(
+            abi.encode(
+                APPROVAL_TYPEHASH,
+                escrowId,
+                milestoneIndex,
+                nonces[msg.sender],
+                signatureDeadline
+            )
+        );
+
+        bytes32 hash = _hashTypedDataV4(structHash);
+        address signer = hash.recover(signature);
+
+        if (signer == address(0)) revert InvalidSignature();
+        return signer;
+    }
 }
