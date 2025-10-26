@@ -304,6 +304,60 @@ contract Athenyx is ReentrancyGuard, ERC721, EIP712 {
         }
     }
 
+    function raiseDispute(uint256 escrowId) external onlyActive(escrowId) {
+        if (!hasContributed[escrowId][msg.sender] && escrows[escrowId].seller != msg.sender) {
+            revert Unauthorized();
+        }
+
+        escrows[escrowId].state = EscrowState.DISPUTED;
+        emit DisputeRaised(escrowId, msg.sender);
+    }
+
+    function resolveDispute(uint256 escrowId, uint256[] calldata milestoneIndicesToRelease) 
+        external 
+        onlyArbiter(escrowId) 
+        nonReentrant 
+    {
+        Escrow storage currentEscrow = escrows[escrowId];
+        if (currentEscrow.state != EscrowState.DISPUTED) revert InvalidState();
+
+        for (uint256 i = 0; i < milestoneIndicesToRelease.length; i++) {
+            uint256 milestoneIndex = milestoneIndicesToRelease[i];
+            if (milestoneIndex >= currentEscrow.milestones.length) revert InvalidAmount();
+
+            Milestone storage currentMilestone = currentEscrow.milestones[milestoneIndex];
+            if (currentMilestone.released) continue;
+
+            currentMilestone.approved = true;
+            currentMilestone.released = true;
+            currentEscrow.totalReleased += currentMilestone.amount;
+
+            (bool success, ) = currentEscrow.seller.call{value: currentMilestone.amount}("");
+            if (!success) revert TransferFailed();
+
+            emit MilestoneReleased(escrowId, milestoneIndex, currentMilestone.amount);
+        }
+
+        currentEscrow.state = EscrowState.ACTIVE;
+
+        if (currentEscrow.arbiterFee > 0) {
+            (bool arbiterSuccess, ) = currentEscrow.arbiter.call{value: currentEscrow.arbiterFee}("");
+            if (!arbiterSuccess) revert TransferFailed();
+        }
+
+        emit DisputeResolved(escrowId, milestoneIndicesToRelease);
+
+        uint256 totalExpectedAmount = currentEscrow.arbiterFee;
+        for (uint256 i = 0; i < currentEscrow.milestones.length; i++) {
+            totalExpectedAmount += currentEscrow.milestones[i].amount;
+        }
+
+        if (currentEscrow.totalReleased == totalExpectedAmount) {
+            currentEscrow.state = EscrowState.COMPLETED;
+            emit EscrowCompleted(escrowId);
+        }
+    }
+
     function _calculateRefund(uint256 escrowId, uint256 amount) internal view returns (uint256) {
         Escrow storage currentEscrow = escrows[escrowId];
         uint256 payerContribution = currentEscrow.contributions[msg.sender];
