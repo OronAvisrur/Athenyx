@@ -1363,6 +1363,160 @@
       "artifacts": [
         "EscrowMilestones"
       ]
+    },
+    "C:\\Users\\user\\athenyx\\contracts\\standard\\examples\\FullFeaturedEscrow.sol": {
+      "lastModificationDate": 1761737347179,
+      "contentHash": "c63be7c3e67b8987dea07cca797d5e6d",
+      "sourceName": "contracts/standard/examples/FullFeaturedEscrow.sol",
+      "solcConfig": {
+        "version": "0.8.30",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../extensions/EscrowMilestones.sol",
+        "../extensions/EscrowGuarantors.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "FullFeaturedEscrow"
+      ]
+    },
+    "C:\\Users\\user\\athenyx\\contracts\\standard\\extensions\\EscrowGuarantors.sol": {
+      "lastModificationDate": 1761737693709,
+      "contentHash": "60d1f77ae4621699f105b83080b1a089",
+      "sourceName": "contracts/standard/extensions/EscrowGuarantors.sol",
+      "solcConfig": {
+        "version": "0.8.30",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../core/EscrowCore.sol",
+        "../interfaces/IEscrowGuarantors.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "EscrowGuarantors"
+      ]
+    },
+    "C:\\Users\\user\\athenyx\\contracts\\standard\\examples\\SimpleEscrow.sol": {
+      "lastModificationDate": 1761737319611,
+      "contentHash": "0e2f3d9fb8ac002477eb0a0e73095b08",
+      "sourceName": "contracts/standard/examples/SimpleEscrow.sol",
+      "solcConfig": {
+        "version": "0.8.30",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../core/EscrowCore.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "SimpleEscrow"
+      ]
+    },
+    "C:\\Users\\user\\athenyx\\contracts\\standard\\examples\\MilestoneEscrow.sol": {
+      "lastModificationDate": 1761738073354,
+      "contentHash": "ef0596f2ed106546f654662c668a6f50",
+      "sourceName": "contracts/standard/examples/MilestoneEscrow.sol",
+      "solcConfig": {
+        "version": "0.8.30",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../extensions/EscrowMilestones.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "MilestoneEscrow"
+      ]
     }
   }
 }
