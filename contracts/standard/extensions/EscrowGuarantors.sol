@@ -52,13 +52,13 @@ abstract contract EscrowGuarantors is EscrowCore, IEscrowGuarantors {
         }
         if (tier == GuarantorTier.NONE) revert InvalidTier();
 
-        Escrow storage escrow = _getEscrow(escrowId);
+        uint256 escrowAmount = escrows[escrowId].amount;
         
         uint256 percentage = tier == GuarantorTier.PRIMARY 
             ? MIN_PRIMARY_STAKE_PERCENTAGE 
             : MIN_SECONDARY_STAKE_PERCENTAGE;
             
-        uint256 minStake = (escrow.amount * percentage) / 100;
+        uint256 minStake = (escrowAmount * percentage) / 100;
 
         if (msg.value < minStake) revert InsufficientStake();
 
@@ -117,8 +117,7 @@ abstract contract EscrowGuarantors is EscrowCore, IEscrowGuarantors {
 
         commitment.stakeAmount -= slashAmount;
 
-        Escrow storage escrow = _getEscrow(escrowId);
-        escrow.funded += slashAmount;
+        escrows[escrowId].funded += slashAmount;
 
         emit GuarantorSlashed(escrowId, guarantor, slashAmount);
     }
@@ -172,9 +171,9 @@ abstract contract EscrowGuarantors is EscrowCore, IEscrowGuarantors {
         return commitment.revealed && commitment.commitedAt != 0;
     }
 
-    function _checkMinGuarantorsRevealed(uint256 escrowId) internal view {
+    function canActivateEscrow(uint256 escrowId) external view returns (bool) {
         uint256 minRequired = escrowMinGuarantors[escrowId];
-        if (minRequired == 0) return;
+        if (minRequired == 0) return true;
 
         uint256 revealedCount = 0;
         address[] storage guarantors = escrowGuarantors[escrowId];
@@ -185,9 +184,7 @@ abstract contract EscrowGuarantors is EscrowCore, IEscrowGuarantors {
             }
         }
 
-        if (revealedCount < minRequired) {
-            revert InsufficientGuarantors();
-        }
+        return revealedCount >= minRequired;
     }
 
     function _onEscrowCompleted(uint256 escrowId) internal virtual override {
@@ -204,21 +201,5 @@ abstract contract EscrowGuarantors is EscrowCore, IEscrowGuarantors {
         }
 
         super._onEscrowCompleted(escrowId);
-    }
-
-    function canActivateEscrow(uint256 escrowId) external view returns (bool) {
-        uint256 minRequired = escrowMinGuarantors[escrowId];
-        if (minRequired == 0) return true;
-
-        uint256 revealedCount = 0;
-        address[] storage guarantors = escrowGuarantors[escrowId];
-
-        for (uint256 i = 0; i < guarantors.length; i++) {
-            if (guarantorCommitments[escrowId][guarantors[i]].revealed) {
-                revealedCount++;
-            }
-        }
-
-        return revealedCount >= minRequired;
     }
 }

@@ -97,6 +97,12 @@ describe("FullFeaturedEscrow - Complete Integration", function () {
     });
 
     it("Should reject insufficient stake", async function () {
+      // Get escrow info
+      const info = await fullEscrow.getEscrowInfo(escrowId);
+      
+      const minStakeCalculated = (info.amount * 20n) / 100n;
+      console.log("Calculated min stake (20%):", ethers.formatEther(minStakeCalculated), "ETH");
+      
       const secret = ethers.randomBytes(32);
       const commitmentHash = ethers.keccak256(
         ethers.solidityPacked(
@@ -105,17 +111,18 @@ describe("FullFeaturedEscrow - Complete Integration", function () {
         )
       );
 
-      const insufficientStake = ethers.parseEther("1.9");
+      const insufficientStake = ethers.parseEther("1");
 
       await expect(
         fullEscrow.connect(guarantor1).commitAsGuarantor(
           escrowId,
-          1,
+          2,
           commitmentHash,
           { value: insufficientStake }
         )
       ).to.be.revertedWithCustomError(fullEscrow, "InsufficientStake");
     });
+
 
     it("Should allow reveal after commitment window", async function () {
       const guarantors = [guarantor1, guarantor2, guarantor3];

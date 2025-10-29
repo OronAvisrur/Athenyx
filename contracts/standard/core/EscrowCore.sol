@@ -18,7 +18,7 @@ contract EscrowCore is IEscrowCore, ReentrancyGuard {
         uint256 createdAt;
     }
 
-    mapping(uint256 => Escrow) private escrows;
+    mapping(uint256 => Escrow) internal escrows;
     mapping(uint256 => mapping(address => bool)) public hasContributed;
 
     modifier onlyCreator(uint256 escrowId) {
@@ -223,8 +223,8 @@ contract EscrowCore is IEscrowCore, ReentrancyGuard {
         return _nextEscrowId;
     }
 
-    function _getEscrow(uint256 escrowId) internal view returns (Escrow storage) {
-        return escrows[escrowId];
+    function _getEscrowAmount(uint256 escrowId) internal view returns (uint256) {
+        return escrows[escrowId].amount;
     }
 
     function _onEscrowActivated(uint256 escrowId) internal virtual {}

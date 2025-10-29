@@ -87,7 +87,7 @@ abstract contract EscrowMilestones is EscrowCore, IEscrowMilestones {
         if (milestoneIndex >= escrowMilestones[escrowId].length) revert MilestoneNotFound();
 
         Milestone storage milestone = escrowMilestones[escrowId][milestoneIndex];
-        Escrow storage escrow = _getEscrow(escrowId);
+        Escrow storage escrow = escrows[escrowId];
 
         bool canRelease = milestone.approved ||
                          (milestone.deadline != 0 && 
