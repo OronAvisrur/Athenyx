@@ -53,9 +53,12 @@ abstract contract EscrowGuarantors is EscrowCore, IEscrowGuarantors {
         if (tier == GuarantorTier.NONE) revert InvalidTier();
 
         Escrow storage escrow = _getEscrow(escrowId);
-        uint256 minStake = (escrow.amount * 
-            (tier == GuarantorTier.PRIMARY ? MIN_PRIMARY_STAKE_PERCENTAGE : MIN_SECONDARY_STAKE_PERCENTAGE)) 
-            / 100;
+        
+        uint256 percentage = tier == GuarantorTier.PRIMARY 
+            ? MIN_PRIMARY_STAKE_PERCENTAGE 
+            : MIN_SECONDARY_STAKE_PERCENTAGE;
+            
+        uint256 minStake = (escrow.amount * percentage) / 100;
 
         if (msg.value < minStake) revert InsufficientStake();
 
@@ -100,8 +103,6 @@ abstract contract EscrowGuarantors is EscrowCore, IEscrowGuarantors {
         commitment.revealed = true;
 
         emit GuarantorRevealed(escrowId, msg.sender);
-
-        _checkMinGuarantorsRevealed(escrowId);
     }
 
     function slashGuarantor(
@@ -203,5 +204,21 @@ abstract contract EscrowGuarantors is EscrowCore, IEscrowGuarantors {
         }
 
         super._onEscrowCompleted(escrowId);
+    }
+
+    function canActivateEscrow(uint256 escrowId) external view returns (bool) {
+        uint256 minRequired = escrowMinGuarantors[escrowId];
+        if (minRequired == 0) return true;
+
+        uint256 revealedCount = 0;
+        address[] storage guarantors = escrowGuarantors[escrowId];
+
+        for (uint256 i = 0; i < guarantors.length; i++) {
+            if (guarantorCommitments[escrowId][guarantors[i]].revealed) {
+                revealedCount++;
+            }
+        }
+
+        return revealedCount >= minRequired;
     }
 }

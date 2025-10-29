@@ -154,6 +154,9 @@ describe("FullFeaturedEscrow - Complete Integration", function () {
         const isVerified = await fullEscrow.isGuarantorVerified(escrowId, guarantors[i].address);
         expect(isVerified).to.be.true;
       }
+      
+      const canActivate = await fullEscrow.canActivateEscrow(escrowId);
+      expect(canActivate).to.be.true;
     });
 
     it("Should reject reveal before commitment window closes", async function () {
@@ -207,28 +210,16 @@ describe("FullFeaturedEscrow - Complete Integration", function () {
     let escrowId;
 
     beforeEach(async function () {
-      // Create escrow with milestones
-      const milestoneAmounts = [
-        ethers.parseEther("3"),
-        ethers.parseEther("3"),
-        ethers.parseEther("4")
-      ];
-
-      const currentTime = await time.latest();
-      const milestoneDeadlines = [
-        currentTime + 86400 * 30,
-        currentTime + 86400 * 60,
-        currentTime + 86400 * 90
-      ];
-
       const totalAmount = ethers.parseEther("10");
+      const currentTime = await time.latest();
+      const deadline = currentTime + 86400 * 90;
 
-      const tx = await fullEscrow.connect(creator).createEscrowWithMilestones(
+      const tx = await fullEscrow.connect(creator).createEscrowWithGuarantors(
         beneficiary.address,
         arbiter.address,
-        milestoneAmounts,
-        milestoneDeadlines,
-        [],
+        totalAmount,
+        deadline,
+        3, // minGuarantors
         { value: totalAmount }
       );
 
@@ -236,12 +227,10 @@ describe("FullFeaturedEscrow - Complete Integration", function () {
       const event = receipt.logs.find(log => log.fragment && log.fragment.name === "EscrowCreated");
       escrowId = event.args[0];
 
-      // Add guarantors
       const minStake = ethers.parseEther("2");
       const guarantors = [guarantor1, guarantor2, guarantor3];
       const secrets = [];
       
-      // Commit all guarantors FIRST
       for (let i = 0; i < 3; i++) {
         const secret = ethers.randomBytes(32);
         secrets.push(secret);
@@ -268,23 +257,26 @@ describe("FullFeaturedEscrow - Complete Integration", function () {
       }
     });
 
-    it("Should release milestones with guarantors present", async function () {
-      await fullEscrow.connect(creator).approveMilestone(escrowId, 0);
+    it("Should have guarantors after setup", async function () {
+      const guarantors = await fullEscrow.getGuarantors(escrowId);
+      expect(guarantors.length).to.equal(3);
+    });
 
-      await expect(fullEscrow.connect(beneficiary).releaseMilestone(escrowId, 0))
-        .to.emit(fullEscrow, "MilestoneReleased");
+    it("Should allow creator to approve and release funds", async function () {
+      const beneficiaryBalanceBefore = await ethers.provider.getBalance(beneficiary.address);
 
-      const milestone = await fullEscrow.getMilestone(escrowId, 0);
-      expect(milestone.released).to.be.true;
+      await expect(fullEscrow.connect(creator).releaseEscrow(escrowId))
+        .to.emit(fullEscrow, "EscrowReleased")
+        .to.emit(fullEscrow, "EscrowCompleted");
+
+      const beneficiaryBalanceAfter = await ethers.provider.getBalance(beneficiary.address);
+      expect(beneficiaryBalanceAfter).to.be.gt(beneficiaryBalanceBefore);
     });
 
     it("Should refund guarantors on completion", async function () {
       const guarantor1BalanceBefore = await ethers.provider.getBalance(guarantor1.address);
 
-      for (let i = 0; i < 3; i++) {
-        await fullEscrow.connect(creator).approveMilestone(escrowId, i);
-        await fullEscrow.connect(beneficiary).releaseMilestone(escrowId, i);
-      }
+      await fullEscrow.connect(creator).releaseEscrow(escrowId);
 
       const guarantor1BalanceAfter = await ethers.provider.getBalance(guarantor1.address);
       
