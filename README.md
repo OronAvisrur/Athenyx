@@ -1,7 +1,7 @@
 <div align="center">
 
 <!-- LOGO PLACEHOLDER -->
-<img src="./assets/logo.png" alt="Athenyx Logo" width="200"/>
+<img src="./assets/Banner-Logo.png" alt="Athenyx Logo" width="1640"/>
 
 # Athenyx Protocol
 
@@ -425,42 +425,7 @@ DISPUTE_PERIOD = 7 days
 
 ---
 
-## 🛠️ Development Roadmap
-
-### ✅ Phase 1: Core Protocol (Complete)
-- [x] Multi-party contributions
-- [x] Milestone-based releases
-- [x] EIP-712 signatures
-- [x] NFT ownership
-- [x] Dispute resolution
-- [x] Guarantor registry
-- [x] Commit-reveal scheme
-- [x] Insurance pool
-- [x] Lender incentives
-- [x] 25 comprehensive tests
-
-### 📋 Phase 2: Standard & Modularity (Current)
-- [ ] Refactor to modular architecture
-- [ ] Create EIP draft
-- [ ] NPM package publication
-- [ ] Developer documentation
-
-### 🔮 Phase 3: Advanced Features (Future)
-- [ ] DAO governance
-- [ ] Cross-chain bridges
-- [ ] Privacy layers (zk-SNARKs)
-- [ ] Credit score oracles
-- [ ] Mobile SDK
-
----
-
 ## 🔒 Security
-
-### Audits
-
-- [ ] Internal security review (Q2 2025)
-- [ ] External audit by [Firm Name] (Q3 2025)
-- [ ] Bug bounty program (Immunefi) - Coming soon
 
 ### Security Best Practices
 
@@ -523,14 +488,6 @@ git push origin feature/amazing-feature
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 🌐 Links
-
-- **Documentation**: Coming soon
-- **Discord**: Coming soon
-- **Twitter**: Coming soon
 
 ---
 
