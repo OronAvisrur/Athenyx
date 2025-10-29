@@ -105,7 +105,7 @@ describe("FullFeaturedEscrow - Complete Integration", function () {
         )
       );
 
-      const insufficientStake = ethers.parseEther("1"); // Less than 20%
+      const insufficientStake = ethers.parseEther("1.9");
 
       await expect(
         fullEscrow.connect(guarantor1).commitAsGuarantor(
@@ -118,32 +118,42 @@ describe("FullFeaturedEscrow - Complete Integration", function () {
     });
 
     it("Should allow reveal after commitment window", async function () {
-      const secret = ethers.randomBytes(32);
-      const commitmentHash = ethers.keccak256(
-        ethers.solidityPacked(
-          ["address", "bytes32", "uint256"],
-          [guarantor1.address, secret, escrowId]
-        )
-      );
+      const guarantors = [guarantor1, guarantor2, guarantor3];
+      const secrets = [];
 
-      await fullEscrow.connect(guarantor1).commitAsGuarantor(
-        escrowId,
-        1,
-        commitmentHash,
-        { value: minStake }
-      );
+      for (let i = 0; i < 3; i++) {
+        const secret = ethers.randomBytes(32);
+        secrets.push(secret);
+        
+        const commitmentHash = ethers.keccak256(
+          ethers.solidityPacked(
+            ["address", "bytes32", "uint256"],
+            [guarantors[i].address, secret, escrowId]
+          )
+        );
 
-      // Fast forward past commitment window
+        await fullEscrow.connect(guarantors[i]).commitAsGuarantor(
+          escrowId,
+          1,
+          commitmentHash,
+          { value: minStake }
+        );
+      }
+
       await time.increase(48 * 3600 + 1);
 
-      await expect(
-        fullEscrow.connect(guarantor1).revealCommitment(escrowId, secret)
-      )
-        .to.emit(fullEscrow, "GuarantorRevealed")
-        .withArgs(escrowId, guarantor1.address);
+      for (let i = 0; i < 3; i++) {
+        await expect(
+          fullEscrow.connect(guarantors[i]).revealCommitment(escrowId, secrets[i])
+        )
+          .to.emit(fullEscrow, "GuarantorRevealed")
+          .withArgs(escrowId, guarantors[i].address);
+      }
 
-      const isVerified = await fullEscrow.isGuarantorVerified(escrowId, guarantor1.address);
-      expect(isVerified).to.be.true;
+      for (let i = 0; i < 3; i++) {
+        const isVerified = await fullEscrow.isGuarantorVerified(escrowId, guarantors[i].address);
+        expect(isVerified).to.be.true;
+      }
     });
 
     it("Should reject reveal before commitment window closes", async function () {
@@ -204,7 +214,7 @@ describe("FullFeaturedEscrow - Complete Integration", function () {
         ethers.parseEther("4")
       ];
 
-      const currentTime = Math.floor(Date.now() / 1000);
+      const currentTime = await time.latest();
       const milestoneDeadlines = [
         currentTime + 86400 * 30,
         currentTime + 86400 * 60,
@@ -228,32 +238,34 @@ describe("FullFeaturedEscrow - Complete Integration", function () {
 
       // Add guarantors
       const minStake = ethers.parseEther("2");
+      const guarantors = [guarantor1, guarantor2, guarantor3];
+      const secrets = [];
       
+      // Commit all guarantors FIRST
       for (let i = 0; i < 3; i++) {
-        const guarantor = [guarantor1, guarantor2, guarantor3][i];
         const secret = ethers.randomBytes(32);
+        secrets.push(secret);
+        
         const commitmentHash = ethers.keccak256(
           ethers.solidityPacked(
             ["address", "bytes32", "uint256"],
-            [guarantor.address, secret, escrowId]
+            [guarantors[i].address, secret, escrowId]
           )
         );
 
-        await fullEscrow.connect(guarantor).commitAsGuarantor(
+        await fullEscrow.connect(guarantors[i]).commitAsGuarantor(
           escrowId,
           1, // PRIMARY
           commitmentHash,
           { value: minStake }
         );
-
-        await time.increase(48 * 3600 + 1);
-
-        await fullEscrow.connect(guarantor).revealCommitment(escrowId, secret);
-
-        await time.increase(-(48 * 3600)); // Reset time for next iteration
       }
 
       await time.increase(48 * 3600 + 1);
+
+      for (let i = 0; i < 3; i++) {
+        await fullEscrow.connect(guarantors[i]).revealCommitment(escrowId, secrets[i]);
+      }
     });
 
     it("Should release milestones with guarantors present", async function () {
@@ -269,7 +281,6 @@ describe("FullFeaturedEscrow - Complete Integration", function () {
     it("Should refund guarantors on completion", async function () {
       const guarantor1BalanceBefore = await ethers.provider.getBalance(guarantor1.address);
 
-      // Release all milestones
       for (let i = 0; i < 3; i++) {
         await fullEscrow.connect(creator).approveMilestone(escrowId, i);
         await fullEscrow.connect(beneficiary).releaseMilestone(escrowId, i);
@@ -277,7 +288,6 @@ describe("FullFeaturedEscrow - Complete Integration", function () {
 
       const guarantor1BalanceAfter = await ethers.provider.getBalance(guarantor1.address);
       
-      // Guarantor should get stake back (minus gas)
       expect(guarantor1BalanceAfter).to.be.gt(guarantor1BalanceBefore);
     });
   });

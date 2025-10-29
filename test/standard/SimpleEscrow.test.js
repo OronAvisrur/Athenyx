@@ -1,5 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
+const { time } = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("SimpleEscrow - Basic Escrow Tests", function () {
   let simpleEscrow;
@@ -26,7 +27,7 @@ describe("SimpleEscrow - Basic Escrow Tests", function () {
   describe("Create Escrow", function () {
     it("Should create escrow with full funding", async function () {
       const amount = ethers.parseEther("1");
-      const deadline = Math.floor(Date.now() / 1000) + 86400;
+      const deadline = (await time.latest()) + 86400;
 
       await expect(
         simpleEscrow.connect(creator).createEscrow(
@@ -43,13 +44,13 @@ describe("SimpleEscrow - Basic Escrow Tests", function () {
       const info = await simpleEscrow.getEscrowInfo(0);
       expect(info.creator).to.equal(creator.address);
       expect(info.beneficiary).to.equal(beneficiary.address);
-      expect(info.state).to.equal(1); // ACTIVE
+      expect(info.state).to.equal(1); 
     });
 
     it("Should create escrow with partial funding (PENDING)", async function () {
       const amount = ethers.parseEther("2");
       const partialFunding = ethers.parseEther("1");
-      const deadline = Math.floor(Date.now() / 1000) + 86400;
+      const deadline = (await time.latest()) + 86400; 
 
       await simpleEscrow.connect(creator).createEscrow(
         beneficiary.address,
@@ -60,12 +61,12 @@ describe("SimpleEscrow - Basic Escrow Tests", function () {
       );
 
       const state = await simpleEscrow.getEscrowState(0);
-      expect(state).to.equal(0); // PENDING
+      expect(state).to.equal(0); 
     });
 
     it("Should reject zero beneficiary address", async function () {
       const amount = ethers.parseEther("1");
-      const deadline = Math.floor(Date.now() / 1000) + 86400;
+      const deadline = (await time.latest()) + 86400;
 
       await expect(
         simpleEscrow.connect(creator).createEscrow(
@@ -79,7 +80,7 @@ describe("SimpleEscrow - Basic Escrow Tests", function () {
     });
 
     it("Should reject zero amount", async function () {
-      const deadline = Math.floor(Date.now() / 1000) + 86400;
+      const deadline = (await time.latest()) + 86400; 
 
       await expect(
         simpleEscrow.connect(creator).createEscrow(
@@ -99,7 +100,7 @@ describe("SimpleEscrow - Basic Escrow Tests", function () {
     beforeEach(async function () {
       const amount = ethers.parseEther("2");
       const partialFunding = ethers.parseEther("1");
-      const deadline = Math.floor(Date.now() / 1000) + 86400;
+      const deadline = (await time.latest()) + 86400;
 
       const tx = await simpleEscrow.connect(creator).createEscrow(
         beneficiary.address,
@@ -130,7 +131,7 @@ describe("SimpleEscrow - Basic Escrow Tests", function () {
       await simpleEscrow.connect(funder).fundEscrow(escrowId, { value: remainingFunding });
 
       const state = await simpleEscrow.getEscrowState(escrowId);
-      expect(state).to.equal(1); // ACTIVE
+      expect(state).to.equal(1);
     });
 
     it("Should reject funding active escrow", async function () {
@@ -147,7 +148,7 @@ describe("SimpleEscrow - Basic Escrow Tests", function () {
 
     beforeEach(async function () {
       const amount = ethers.parseEther("1");
-      const deadline = Math.floor(Date.now() / 1000) + 86400;
+      const deadline = (await time.latest()) + 86400;
 
       const tx = await simpleEscrow.connect(creator).createEscrow(
         beneficiary.address,
@@ -173,7 +174,7 @@ describe("SimpleEscrow - Basic Escrow Tests", function () {
       expect(beneficiaryBalanceAfter).to.be.gt(beneficiaryBalanceBefore);
 
       const state = await simpleEscrow.getEscrowState(escrowId);
-      expect(state).to.equal(3); // COMPLETED
+      expect(state).to.equal(3);
     });
 
     it("Should allow arbiter to release", async function () {
@@ -193,7 +194,7 @@ describe("SimpleEscrow - Basic Escrow Tests", function () {
 
     beforeEach(async function () {
       const amount = ethers.parseEther("1");
-      const deadline = Math.floor(Date.now() / 1000) + 86400;
+      const deadline = (await time.latest()) + 86400;
 
       const tx = await simpleEscrow.connect(creator).createEscrow(
         beneficiary.address,
@@ -215,7 +216,7 @@ describe("SimpleEscrow - Basic Escrow Tests", function () {
         .to.emit(simpleEscrow, "EscrowCancelled");
 
       const state = await simpleEscrow.getEscrowState(escrowId);
-      expect(state).to.equal(2); // CANCELLED
+      expect(state).to.equal(2);
 
       const creatorBalanceAfter = await ethers.provider.getBalance(creator.address);
       expect(creatorBalanceAfter).to.be.gt(creatorBalanceBefore);
