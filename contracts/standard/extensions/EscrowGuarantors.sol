@@ -13,6 +13,9 @@ abstract contract EscrowGuarantors is EscrowCore, IEscrowGuarantors {
     mapping(uint256 => mapping(address => GuarantorCommitment)) private guarantorCommitments;
     mapping(uint256 => address[]) private escrowGuarantors;
     mapping(uint256 => uint256) private escrowCommitmentDeadline;
+    mapping(uint256 => uint256) private escrowMinGuarantors;
+
+    error InsufficientGuarantors();
 
     function createEscrowWithGuarantors(
         address beneficiary,
@@ -31,6 +34,7 @@ abstract contract EscrowGuarantors is EscrowCore, IEscrowGuarantors {
         );
 
         escrowCommitmentDeadline[escrowId] = block.timestamp + COMMITMENT_WINDOW;
+        escrowMinGuarantors[escrowId] = minGuarantors;
 
         return escrowId;
     }
@@ -96,6 +100,8 @@ abstract contract EscrowGuarantors is EscrowCore, IEscrowGuarantors {
         commitment.revealed = true;
 
         emit GuarantorRevealed(escrowId, msg.sender);
+
+        _checkMinGuarantorsRevealed(escrowId);
     }
 
     function slashGuarantor(
@@ -163,6 +169,24 @@ abstract contract EscrowGuarantors is EscrowCore, IEscrowGuarantors {
     {
         GuarantorCommitment storage commitment = guarantorCommitments[escrowId][guarantor];
         return commitment.revealed && commitment.commitedAt != 0;
+    }
+
+    function _checkMinGuarantorsRevealed(uint256 escrowId) internal view {
+        uint256 minRequired = escrowMinGuarantors[escrowId];
+        if (minRequired == 0) return;
+
+        uint256 revealedCount = 0;
+        address[] storage guarantors = escrowGuarantors[escrowId];
+
+        for (uint256 i = 0; i < guarantors.length; i++) {
+            if (guarantorCommitments[escrowId][guarantors[i]].revealed) {
+                revealedCount++;
+            }
+        }
+
+        if (revealedCount < minRequired) {
+            revert InsufficientGuarantors();
+        }
     }
 
     function _onEscrowCompleted(uint256 escrowId) internal virtual override {
