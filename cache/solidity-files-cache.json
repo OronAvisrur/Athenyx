@@ -1141,6 +1141,228 @@
       "artifacts": [
         "IReputationSystem"
       ]
+    },
+    "C:\\Users\\user\\athenyx\\contracts\\standard\\interfaces\\IEscrowCore.sol": {
+      "lastModificationDate": 1761736361590,
+      "contentHash": "f6fc5cb63fc3e170f3bcedd08997e928",
+      "sourceName": "contracts/standard/interfaces/IEscrowCore.sol",
+      "solcConfig": {
+        "version": "0.8.30",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "IEscrowCore"
+      ]
+    },
+    "C:\\Users\\user\\athenyx\\contracts\\standard\\interfaces\\IEscrowGuarantors.sol": {
+      "lastModificationDate": 1761736377808,
+      "contentHash": "90904d65d6d4ec39c481ab26ffe3be0d",
+      "sourceName": "contracts/standard/interfaces/IEscrowGuarantors.sol",
+      "solcConfig": {
+        "version": "0.8.30",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "IEscrowGuarantors"
+      ]
+    },
+    "C:\\Users\\user\\athenyx\\contracts\\standard\\interfaces\\IEscrowInsurance.sol": {
+      "lastModificationDate": 1761736384595,
+      "contentHash": "e9879763c584caac4c2215febb50ea0c",
+      "sourceName": "contracts/standard/interfaces/IEscrowInsurance.sol",
+      "solcConfig": {
+        "version": "0.8.30",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "IEscrowInsurance"
+      ]
+    },
+    "C:\\Users\\user\\athenyx\\contracts\\standard\\interfaces\\IEscrowMilestones.sol": {
+      "lastModificationDate": 1761736370185,
+      "contentHash": "b793a890d66a76299937e951e82bc3d0",
+      "sourceName": "contracts/standard/interfaces/IEscrowMilestones.sol",
+      "solcConfig": {
+        "version": "0.8.30",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "IEscrowMilestones"
+      ]
+    },
+    "C:\\Users\\user\\athenyx\\contracts\\standard\\core\\EscrowCore.sol": {
+      "lastModificationDate": 1761736845438,
+      "contentHash": "ffbe446ad84308c825fb2485036870d6",
+      "sourceName": "contracts/standard/core/EscrowCore.sol",
+      "solcConfig": {
+        "version": "0.8.30",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../interfaces/IEscrowCore.sol",
+        "@openzeppelin/contracts/utils/ReentrancyGuard.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "EscrowCore"
+      ]
+    },
+    "C:\\Users\\user\\athenyx\\contracts\\standard\\extensions\\EscrowMilestones.sol": {
+      "lastModificationDate": 1761737002808,
+      "contentHash": "74ac2c2576092cb258d781b2495a2010",
+      "sourceName": "contracts/standard/extensions/EscrowMilestones.sol",
+      "solcConfig": {
+        "version": "0.8.30",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../core/EscrowCore.sol",
+        "../interfaces/IEscrowMilestones.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "EscrowMilestones"
+      ]
     }
   }
 }
